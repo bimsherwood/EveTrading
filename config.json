@@ -1,0 +1,10 @@
+{
+    "ClientId":"UserSecrets",
+    "ClientSecret":"UserSecrets",
+    "ApiUrl":"https://esi.evetech.net",
+    "RefreshTokenUrl":"https://login.eveonline.com/v2/oauth/authorize",
+    "AccessTokenUrl":"https://login.eveonline.com/v2/oauth/token",
+    "CallbackUrl":"http://localhost:8088",
+    "SDETypeFile": "C:/Users/bimmo/Downloads/type.yaml",
+    "SDEMarketGroupFile": "C:/Users/bimmo/Downloads/marketgroup.yaml"
+}
