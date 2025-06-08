@@ -1,5 +1,7 @@
 using Newtonsoft.Json;
 
+namespace EveTrading.EveApi;
+
 public class EveTokenResponse {
     [JsonProperty("access_token")]
     public string AccessToken { get; set; }

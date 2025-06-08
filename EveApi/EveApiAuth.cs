@@ -5,10 +5,12 @@ using System.Net;
 using Newtonsoft.Json;
 using System.Text;
 using System.Net.Http.Headers;
-using System.Net.Cache;
+
+namespace EveTrading.EveApi;
 
 public class EveApiAuth {
 
+    private readonly HttpClient HttpClient;
     private readonly IConfiguration Config;
     private readonly EveTokenStore TokenStore;
     private string? LoginToken;
@@ -16,7 +18,8 @@ public class EveApiAuth {
     private string? AccessToken;
     private DateTime? RefreshAt;
 
-    public EveApiAuth(IConfiguration config, EveTokenStore tokenStore) {
+    public EveApiAuth(HttpClient httpClient, IConfiguration config, EveTokenStore tokenStore) {
+        this.HttpClient = httpClient;
         this.Config = config;
         this.TokenStore = tokenStore;
     }
@@ -64,8 +67,7 @@ public class EveApiAuth {
         request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
         request.Content = formEncodedBody;
 
-        using var httpClient = new HttpClient();
-        var response = await httpClient.SendAsync(request);
+        var response = await this.HttpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
         var responseString = await response.Content.ReadAsStringAsync();
         var responseContent = JsonConvert.DeserializeObject<EveTokenResponse>(responseString);
@@ -148,8 +150,7 @@ public class EveApiAuth {
         request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
         request.Content = formEncodedBody;
 
-        using var httpClient = new HttpClient();
-        var response = await httpClient.SendAsync(request);
+        var response = await this.HttpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
         var responseString = await response.Content.ReadAsStringAsync();
         var responseContent = JsonConvert.DeserializeObject<EveTokenResponse>(responseString);

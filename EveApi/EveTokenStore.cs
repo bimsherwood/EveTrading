@@ -1,5 +1,7 @@
 using Newtonsoft.Json;
 
+namespace EveTrading.EveApi;
+
 public class EveTokenStore {
 
     public string FilePath { get; }
@@ -24,7 +26,8 @@ public class EveTokenStore {
             this.AccessToken = store.AccessToken;
             this.RefreshToken = store.RefreshToken;
             this.RefreshAt = store.RefreshAt;
-        } else {
+        }
+        else {
             this.AccessToken = null;
             this.RefreshToken = null;
             this.RefreshAt = null;

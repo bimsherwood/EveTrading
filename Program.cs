@@ -1,4 +1,5 @@
 ﻿
+using EveTrading.EveApi;
 using EveTrading.SDE;
 using Microsoft.Extensions.Configuration;
 
@@ -9,21 +10,16 @@ public class Program {
             .AddJsonFile("config.json")
             .AddUserSecrets<Program>();
         var config = configBuilder.Build();
+        using var httpClient = new HttpClient();
         var tokenStore = new EveTokenStore("token.json");
-        var api = new EveApiAuth(config, tokenStore);
-
+        var auth = new EveApiAuth(httpClient, config, tokenStore);
+        await auth.RefreshLoginIfRequired();
         var sde = await SDE.Load(config);
-        var veldspar = sde.Commodities["Veldspar"];
-        Console.WriteLine(veldspar.Id);
-
-    }
-
-    private static async Task GetTypes(EveApiAuth api) {
-        var request = api.AuthenticatedRequest("/universe/types/");
-        using var client = new HttpClient();
-        var resposne = await client.SendAsync(request);
-        var responseContent = await resposne.Content.ReadAsStringAsync();
-        Console.WriteLine(responseContent);
+        var api = new EveApi(sde, httpClient, auth);
+        var veldsparPrices = await api.GetPriceHistory(sde.TheForgeId, "Veldspar");
+        foreach (var price in veldsparPrices) {
+            Console.WriteLine("{0:yyyy-MM-dd} - {1}", price.Date, price.Average);
+        }
     }
 
 }
