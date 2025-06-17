@@ -2,9 +2,9 @@
 using System.Text;
 using EveTrading.EveApi;
 
-public class Analysis {
+public class RecentStatistics {
 
-    public static Analysis Analyse(CommoditySummarySeries summary) {
+    public static RecentStatistics Analyse(CommoditySummarySeries summary) {
 
         var today = summary.Series.Last();
         var fiveDay = summary.Series.Skip(summary.Series.Count - 5).ToList();
@@ -12,7 +12,7 @@ public class Analysis {
         var twentyDay = summary.Series.Skip(summary.Series.Count - 20).ToList();
         var ninetyDay = summary.Series.Skip(summary.Series.Count - 90).ToList();
 
-        var analysis = new Analysis();
+        var analysis = new RecentStatistics();
         analysis.Name = summary.Name;
 
         analysis.NinetyDayHigh = ninetyDay.Select(o => o.Highest).Max();
@@ -40,7 +40,7 @@ public class Analysis {
     public decimal AverageDailyMonetaryVolume { get; private set; }
     public decimal AverageDailyRangeToMedian { get; private set; }
 
-    private Analysis() { }
+    private RecentStatistics() { }
 
     public override string ToString() {
         var builder = new StringBuilder();

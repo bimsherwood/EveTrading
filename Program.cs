@@ -49,11 +49,8 @@ public class Program {
     private async Task Run(string[] args) {
         var instruction = args.FirstOrDefault()?.ToLower();
         switch (instruction) {
-            case "summary":
-                await Summaries();
-                break;
-            case "momentum":
-                await Momentum();
+            case "recent":
+                await Recents();
                 break;
             case "plot":
                 await DrawPlot();
@@ -66,57 +63,36 @@ public class Program {
 
     private async Task ShowHelp() {
         Console.WriteLine("Usage:");
-        Console.WriteLine("EveTrading.exe summary");
-        Console.WriteLine("EveTrading.exe momentum");
+        Console.WriteLine("EveTrading.exe recent");
         Console.WriteLine("EveTrading.exe plot");
     }
 
-    private async Task Summaries() {
+    private async Task Recents() {
         foreach (var commodity in this.Commodities) {
             Console.WriteLine($"=== {commodity} ===");
             Console.WriteLine();
             var localPrices = await this.Api.GetPriceHistory(this.Sde.SinqLaisonId, commodity);
-            var localAnalysis = Analysis.Analyse(localPrices);
+            var localAnalysis = RecentStatistics.Analyse(localPrices);
             Console.WriteLine("Local:");
             Console.WriteLine(localAnalysis);
             Console.WriteLine();
             var centralPrices = await this.Api.GetPriceHistory(this.Sde.TheForgeId, commodity);
-            var centralAnalysis = Analysis.Analyse(centralPrices);
+            var centralAnalysis = RecentStatistics.Analyse(centralPrices);
             Console.WriteLine("Central:");
             Console.WriteLine(centralAnalysis);
             Console.WriteLine();
         }
     }
 
-    private async Task Momentum() {
-        var localSignals = new List<MomentumSignal>();
-        var centralSignals = new List<MomentumSignal>();
-        foreach (var commodity in this.Commodities) {
-            var localPrices = await this.Api.GetPriceHistory(this.Sde.SinqLaisonId, commodity);
-            var localMomentum = MomentumSignal.Analyse(localPrices);
-            localSignals.Add(localMomentum);
-            var centralPrices = await this.Api.GetPriceHistory(this.Sde.TheForgeId, commodity);
-            var centralMomentum = MomentumSignal.Analyse(centralPrices);
-            centralSignals.Add(centralMomentum);
-        }
-        var bestLocalUp = localSignals.MaxBy(o => o.MeanChange);
-        Console.WriteLine($"Best Local Momentum Up: {bestLocalUp}");
-        var bestLocalDown = localSignals.MinBy(o => o.MeanChange);
-        Console.WriteLine($"Best Local Momentum Down: {bestLocalDown}");
-        var bestCentralUp = centralSignals.MaxBy(o => o.MeanChange);
-        Console.WriteLine($"Best Central Momentum Up: {bestCentralUp}");
-        var bestCentralDown = centralSignals.MinBy(o => o.MeanChange);
-        Console.WriteLine($"Best Central Momentum Down: {bestCentralDown}");
-    }
-
     private async Task DrawPlot() {
 
         var commodity = "Construction Blocks";
         var centralPrices = await this.Api.GetPriceHistory(this.Sde.TheForgeId, commodity);
+        var centralPriceMomentum = MomentumSignal.Analyse(centralPrices);
 
         var graphOutputFolder = this.Config["GraphOutputFolder"];
         var graphOutputFile = Path.Combine(graphOutputFolder, "EveTrading.png");
-        var plot = new CommodityPlot(centralPrices);
+        var plot = new CommodityPlot(centralPriceMomentum);
         plot.Render(graphOutputFile);
 
         Process.Start(new ProcessStartInfo {
