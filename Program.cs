@@ -90,6 +90,12 @@ public class Program {
         var centralPrices = await this.Api.GetPriceHistory(this.Sde.TheForgeId, commodity);
         var centralPriceMomentum = MomentumSignal.Analyse(centralPrices);
 
+        var backTest = new BackTest(centralPriceMomentum);
+        var startingCash = 1000 * 1000 * 1000;
+        var taxRate = 0.03m;
+        var finalCash = backTest.TradeWith(startingCash, taxRate);
+        Console.WriteLine($"Trading with {startingCash:C} tax rate {taxRate:P}: {finalCash:C}");
+
         var graphOutputFolder = this.Config["GraphOutputFolder"];
         var graphOutputFile = Path.Combine(graphOutputFolder, "EveTrading.png");
         var plot = new CommodityPlot(centralPriceMomentum);

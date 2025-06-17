@@ -1,6 +1,5 @@
 
 using System.Drawing;
-using EveTrading.EveApi;
 
 public class CommodityPlot {
 
