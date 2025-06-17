@@ -1,7 +1,7 @@
 
 namespace EveTrading.EveApi;
 
-public class CommodityPriceSummary {
+public class CommoditySummaryDay {
     public DateTime Date { get; set; }
     public decimal Average { get; set; }
     public decimal Highest { get; set; }

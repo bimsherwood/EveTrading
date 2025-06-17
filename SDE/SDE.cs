@@ -30,9 +30,11 @@ public class SDE {
 
         // Load regions
         var theForge = await LoadEveRegion(sdeRoot, "TheForge");
+        var sinqLaison = await LoadEveRegion(sdeRoot, "SinqLaison");
 
         var sde = new SDE();
         sde.TheForgeId = theForge.RegionId;
+        sde.SinqLaisonId = sinqLaison.RegionId;
         sde.Commodities = commodities
             .DistinctBy(o => o.Name) // TODO: This elides some types that appear twice with the same name.
             .ToDictionary(o => o.Name);
@@ -55,6 +57,7 @@ public class SDE {
     }
 
     public int TheForgeId { get; private set; }
+    public int SinqLaisonId { get; private set; }
     public Dictionary<string, SDEType> Commodities { get; private set; }
 
     private SDE() { }
