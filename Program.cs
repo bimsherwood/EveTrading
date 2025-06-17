@@ -1,4 +1,5 @@
 ﻿
+using System.Diagnostics;
 using EveTrading.EveApi;
 using EveTrading.SDE;
 using Microsoft.Extensions.Configuration;
@@ -18,19 +19,20 @@ public class Program {
         var sde = await SDE.Load(config);
         var api = new EveApi(sde, httpClient, auth);
 
-        var program = new Program(sde, api);
+        var program = new Program(sde, api, config);
         await program.Run(args);
 
     }
 
     private readonly SDE Sde;
     private readonly EveApi Api;
+    private readonly IConfiguration Config;
     private readonly string[] Commodities;
 
-    public Program(SDE sde, EveApi api) {
+    public Program(SDE sde, EveApi api, IConfiguration config) {
         this.Sde = sde;
         this.Api = api;
-
+        this.Config = config;
         this.Commodities = new[]{
             "Chiral Structures",
             "Silicon",
@@ -53,6 +55,9 @@ public class Program {
             case "momentum":
                 await Momentum();
                 break;
+            case "plot":
+                await DrawPlot();
+                break;
             default:
                 await ShowHelp();
                 break;
@@ -63,6 +68,7 @@ public class Program {
         Console.WriteLine("Usage:");
         Console.WriteLine("EveTrading.exe summary");
         Console.WriteLine("EveTrading.exe momentum");
+        Console.WriteLine("EveTrading.exe plot");
     }
 
     private async Task Summaries() {
@@ -101,6 +107,23 @@ public class Program {
         Console.WriteLine($"Best Central Momentum Up: {bestCentralUp}");
         var bestCentralDown = centralSignals.MinBy(o => o.MeanChange);
         Console.WriteLine($"Best Central Momentum Down: {bestCentralDown}");
+    }
+
+    private async Task DrawPlot() {
+
+        var commodity = "Construction Blocks";
+        var centralPrices = await this.Api.GetPriceHistory(this.Sde.TheForgeId, commodity);
+
+        var graphOutputFolder = this.Config["GraphOutputFolder"];
+        var graphOutputFile = Path.Combine(graphOutputFolder, "EveTrading.png");
+        var plot = new CommodityPlot(centralPrices);
+        plot.Render(graphOutputFile);
+
+        Process.Start(new ProcessStartInfo {
+            UseShellExecute = true,
+            FileName = graphOutputFile
+        });
+
     }
 
 }
