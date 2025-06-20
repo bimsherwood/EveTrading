@@ -88,7 +88,8 @@ public class Program {
 
         var commodity = "Construction Blocks";
         var centralPrices = await this.Api.GetPriceHistory(this.Sde.TheForgeId, commodity);
-        var centralPriceMomentum = MomentumSignal.Analyse(centralPrices);
+        var centralPricesSliced = centralPrices; //.Slice(0, 60);
+        var centralPriceMomentum = MomentumSignal.Analyse(centralPricesSliced, 30, 40);
 
         var backTest = new BackTest(centralPriceMomentum);
         var startingCash = 1000 * 1000 * 1000;

@@ -3,13 +3,10 @@ using EveTrading.EveApi;
 
 public class MomentumSignal {
 
-    public static MomentumSignal Analyse(CommoditySummarySeries summary) {
+    public static MomentumSignal Analyse(CommoditySummarySeries summary, int smallWindowSize, int largeWindowSize) {
 
-        var smallWindowSize = 5;
-        var largeWindowSize = 20;
-
-        var smallMovingAvg = MovingAverage(summary, 5);
-        var largeMovingAvg = MovingAverage(summary, 20);
+        var smallMovingAvg = MovingAverage(summary, smallWindowSize);
+        var largeMovingAvg = MovingAverage(summary, largeWindowSize);
         var differences = Enumerable.Zip(smallMovingAvg, largeMovingAvg, (f, t) => (f - t) / t).ToList();
 
         // Construct the moving averages
@@ -25,7 +22,7 @@ public class MomentumSignal {
         }
 
         // Annotate signals
-        for (var i = 1; i < series.Count; i++) {
+        for (var i = largeWindowSize; i < series.Count; i++) {
 
             var yesterday = series[i - 1];
             var today = series[i];
@@ -37,7 +34,7 @@ public class MomentumSignal {
             if (invertUp) {
                 today.Signal = Signal.Buy;
             }
-            
+
             // When the small average overtakes the large average, negative momentum
             var invertDown =
                 yesterday.SmallWindowAverage >= yesterday.LargeWindowAverage &&
