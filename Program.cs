@@ -15,7 +15,6 @@ public class Program {
         using var httpClient = new HttpClient();
         var tokenStore = new EveTokenStore("token.json");
         var auth = new EveApiAuth(httpClient, config, tokenStore);
-        await auth.RefreshLoginIfRequired();
         var sde = await SDE.Load(config);
         var api = new EveApi(sde, httpClient, auth);
 
@@ -25,14 +24,14 @@ public class Program {
     }
 
     private readonly SDE Sde;
-    private readonly EveApi Api;
+    private readonly PriceCache PriceCache;
     private readonly IConfiguration Config;
     private readonly string[] Commodities;
 
     public Program(SDE sde, EveApi api, IConfiguration config) {
         this.Sde = sde;
-        this.Api = api;
         this.Config = config;
+        this.PriceCache = new PriceCache(api, config);
         this.Commodities = new[]{
             "Chiral Structures",
             "Silicon",
@@ -52,8 +51,11 @@ public class Program {
             case "recent":
                 await Recents();
                 break;
+            case "swingtest":
+                await SwingTest(args.Skip(1).ToArray());
+                break;
             case "plot":
-                await DrawPlot();
+                await DrawPlot(args.Skip(1).ToArray());
                 break;
             default:
                 await ShowHelp();
@@ -64,19 +66,20 @@ public class Program {
     private async Task ShowHelp() {
         Console.WriteLine("Usage:");
         Console.WriteLine("EveTrading.exe recent");
-        Console.WriteLine("EveTrading.exe plot");
+        Console.WriteLine("EveTrading.exe swingtest <Commodity>");
+        Console.WriteLine("EveTrading.exe plot <Commodity>");
     }
 
     private async Task Recents() {
         foreach (var commodity in this.Commodities) {
             Console.WriteLine($"=== {commodity} ===");
             Console.WriteLine();
-            var localPrices = await this.Api.GetPriceHistory(this.Sde.SinqLaisonId, commodity);
+            var localPrices = await this.PriceCache.LoadCommodity(this.Sde.SinqLaisonId, commodity);
             var localAnalysis = RecentStatistics.Analyse(localPrices);
             Console.WriteLine("Local:");
             Console.WriteLine(localAnalysis);
             Console.WriteLine();
-            var centralPrices = await this.Api.GetPriceHistory(this.Sde.TheForgeId, commodity);
+            var centralPrices = await this.PriceCache.LoadCommodity(this.Sde.TheForgeId, commodity);
             var centralAnalysis = RecentStatistics.Analyse(centralPrices);
             Console.WriteLine("Central:");
             Console.WriteLine(centralAnalysis);
@@ -84,28 +87,49 @@ public class Program {
         }
     }
 
-    private async Task DrawPlot() {
+    private async Task SwingTest(string[] args) {
 
-        var commodity = "Construction Blocks";
-        var centralPrices = await this.Api.GetPriceHistory(this.Sde.TheForgeId, commodity);
-        var centralPricesSliced = centralPrices; //.Slice(0, 60);
-        var centralPriceMomentum = MomentumSignal.Analyse(centralPricesSliced, 30, 40);
+        var commodity = args.FirstOrDefault() ?? "(none)";
+        if (!this.Sde.Commodities.TryGetValue(commodity, out var _)) {
+            Console.WriteLine($"Commodity {commodity} not known.");
+            return;
+        }
 
-        var backTest = new BackTest(centralPriceMomentum);
+        var centralPrices = await this.PriceCache.LoadCommodity(this.Sde.TheForgeId, commodity);
+        var centralOrders = SwingSignal.Analyse(centralPrices, 90);
+
         var startingCash = 1000 * 1000 * 1000;
         var taxRate = 0.03m;
+        var backTest = new BackTest(centralOrders);
         var finalCash = backTest.TradeWith(startingCash, taxRate);
-        Console.WriteLine($"Trading with {startingCash:C} tax rate {taxRate:P}: {finalCash:C}");
+        Console.WriteLine($"Back testing {commodity} with {startingCash:C} tax rate {taxRate:P}: {finalCash:C}");
 
-        var graphOutputFolder = this.Config["GraphOutputFolder"];
-        var graphOutputFile = Path.Combine(graphOutputFolder, "EveTrading.png");
-        var plot = new CommodityPlot(centralPriceMomentum);
+    }
+
+    private async Task DrawPlot(string[] args) {
+
+        var commodity = args.FirstOrDefault() ?? "(none)";
+        if (!this.Sde.Commodities.TryGetValue(commodity, out var _)) {
+            Console.WriteLine($"Commodity {commodity} not known.");
+            return;
+        }
+
+        var centralPrices = await this.PriceCache.LoadCommodity(this.Sde.TheForgeId, commodity);
+        var centralOrders = SwingSignal.Analyse(centralPrices, 90);
+
+        var graphOutputFolder = this.Config["GraphOutputFolder"]!;
+        var graphOutputFile = Path.Combine(graphOutputFolder, $"{commodity}.png");
+        var plot = new CommodityPlot(centralPrices, centralOrders);
         plot.Render(graphOutputFile);
 
-        Process.Start(new ProcessStartInfo {
-            UseShellExecute = true,
-            FileName = graphOutputFile
-        });
+        var recentSignals = centralOrders
+            .Orders
+            .TakeLast(5)
+            .Where(o => o.Signal != Signal.Hold)
+            .ToArray();
+        if (recentSignals.Any(o => o.Signal != Signal.Hold)) {
+            Console.WriteLine($"Attention: {commodity}");
+        }
 
     }
 

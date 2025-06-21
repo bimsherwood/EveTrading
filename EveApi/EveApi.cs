@@ -16,6 +16,7 @@ public class EveApi {
     }
 
     public async Task<CommoditySummarySeries> GetPriceHistory(int regionId, string commodityName) {
+        await this.Auth.RefreshLoginIfRequired();
         var commodity = this.SDE.Commodities[commodityName];
         var request = this.Auth.AuthenticatedRequest($"/latest/markets/{regionId}/history/?type_id={commodity.Id}");
         var response = await this.HttpClient.SendAsync(request);

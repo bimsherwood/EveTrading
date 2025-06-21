@@ -1,43 +1,46 @@
 
-using System.Drawing;
-
 public class BackTest {
 
-    private readonly MomentumSignal MomentumSignal;
+    private readonly IOrderSequence SignalSeries;
 
-    public BackTest(MomentumSignal signal) {
-        this.MomentumSignal = signal;
+    public BackTest(IOrderSequence signal) {
+        this.SignalSeries = signal;
     }
 
     public decimal TradeWith(decimal startingCash, decimal salesTaxRate) {
-        
+
+        var orders = this.SignalSeries.Orders;
+
         var cash = startingCash;
         var units = 0;
-        for (var i = 0; i < this.MomentumSignal.Series.Count; i++) {
-            var today = this.MomentumSignal.Series[i];
-            var price = today.Day.Average;
+        for (var i = 0; i < orders.Count; i++) {
+
+            var order = orders[i];
 
             // Buy
-            if (today.Signal == Signal.Buy) {
-                var unitsBought = (int)(cash / price);
-                var remainingCash = cash % price;
+            if (order.Signal == Signal.Buy) {
+                var targetSpend = cash;
+                var unitsBought = (int)(targetSpend / order.BuyPrice);
+                var actualSpend = unitsBought * order.BuyPrice;
                 units += unitsBought;
-                cash = remainingCash;
+                cash -= actualSpend;
             }
 
             // Sell
-            if (today.Signal == Signal.Sell) {
-                var salePrice = units * price;
-                var salesTax = salePrice * salesTaxRate;
-                cash += salePrice - salesTax;
-                units = 0;
+            if (order.Signal == Signal.Sell) {
+                var unitsSold = units;
+                var saleRevenue = unitsSold * order.SellPrice;
+                var salesTax = saleRevenue * salesTaxRate;
+                cash += saleRevenue - salesTax;
+                units -= unitsSold;
             }
 
         }
 
-        var finalSalesPrice = this.MomentumSignal.Series.Last().Day.Average;
-        var finalSale = units * finalSalesPrice;
-        cash += finalSale;
+        var finalSalesPrice = this.SignalSeries.FinalSalePrice;
+        var finalSaleRevenue = units * finalSalesPrice;
+        var finalSalesTax = finalSaleRevenue * salesTaxRate;
+        cash += finalSaleRevenue - finalSalesTax;
         return cash;
 
     }

@@ -1,7 +1,7 @@
 
 using EveTrading.EveApi;
 
-public class MomentumSignal {
+public class MomentumSignal : IOrderSequence {
 
     public static MomentumSignal Analyse(CommoditySummarySeries summary, int smallWindowSize, int largeWindowSize) {
 
@@ -70,6 +70,9 @@ public class MomentumSignal {
     public int SmallWindow { get; private set; }
     public int LargeWindow { get; private set; }
     public List<MomentumDay> Series { get; private set; }
+
+    public List<Order> Orders => this.Series.Select(o => new Order(o)).ToList();
+    public decimal FinalSalePrice => this.Series.Last().Day.Average;
 
     private MomentumSignal() { }
 

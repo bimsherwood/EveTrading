@@ -6,6 +6,6 @@ public class CommoditySummaryDay {
     public decimal Average { get; set; }
     public decimal Highest { get; set; }
     public decimal Lowest { get; set; }
-    public int OrderCount { get; set; }
-    public int Volume { get; set; }
+    public long OrderCount { get; set; }
+    public long Volume { get; set; }
 }
