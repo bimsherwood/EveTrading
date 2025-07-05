@@ -14,13 +14,14 @@ public class CommodityPlot {
 
     public void Render(string fileName) {
 
-        ScottPlot.Plot myPlot = new();
+        ScottPlot.Plot plot = new();
 
         // Lines
         var dailyAverage = this.Commodity.Series
             .Select((o, i) => new ScottPlot.Coordinates { X = i, Y = (double)o.Average })
             .ToArray();
-        myPlot.Add.ScatterLine(dailyAverage, ScottPlot.Color.FromColor(Color.Gray));
+        var priceLine = plot.Add.ScatterLine(dailyAverage, ScottPlot.Color.FromColor(Color.Gray));
+        priceLine.Axes.YAxis = plot.Axes.Right;
 
         // Markers
         var buys = this.Orders.Orders
@@ -34,13 +35,26 @@ public class CommodityPlot {
             .Select(o => new ScottPlot.Coordinates { X = o.X, Y = o.Y })
             .ToArray();
         foreach (var buy in buys) {
-            myPlot.Add.Marker(buy, ScottPlot.MarkerShape.FilledSquare, size: 20, color: ScottPlot.Color.FromColor(Color.Blue));
+            var marker = plot.Add.Marker(
+                buy,
+                ScottPlot.MarkerShape.FilledSquare,
+                size: 20,
+                color: ScottPlot.Color.FromColor(Color.Blue));
+            marker.Axes.YAxis = plot.Axes.Right;
         }
         foreach (var sell in sells) {
-            myPlot.Add.Marker(sell, ScottPlot.MarkerShape.Cross, size: 20, color: ScottPlot.Color.FromColor(Color.Red));
+            var marker = plot.Add.Marker(
+                sell,
+                ScottPlot.MarkerShape.FilledSquare,
+                size: 20,
+                color: ScottPlot.Color.FromColor(Color.Red));
+            marker.Axes.YAxis = plot.Axes.Right;
         }
 
-        myPlot.SavePng(fileName, 3200, 1200);
+        // Axis
+        //plot.Axes.Left.IsVisible = false;
+
+        plot.SavePng(fileName, 3200, 1200);
     }
 
 }
