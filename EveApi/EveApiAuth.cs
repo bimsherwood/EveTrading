@@ -27,11 +27,12 @@ public class EveApiAuth {
     public async Task RefreshLoginIfRequired() {
         await Load();
         var loginRequired = this.RefreshToken == null;
-        var missingAccessToken = this.AccessToken == null;
-        var expired = this.RefreshAt == null || this.RefreshAt.Value < DateTime.Now;
         if (loginRequired) {
             await LogIn();
-        } else if (missingAccessToken || expired) {
+        }
+        var missingAccessToken = this.AccessToken == null;
+        var expired = this.RefreshAt == null || this.RefreshAt.Value < DateTime.Now;
+        if (missingAccessToken || expired) {
             await RefreshAccessToken();
             await Save();
         }
@@ -48,6 +49,16 @@ public class EveApiAuth {
         var request = new HttpRequestMessage(HttpMethod.Get, $"{apiUrl}{path}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", this.AccessToken);
         return request;
+    }
+
+    public int? GetCharacter() {
+        if (this.AccessToken == null) {
+            return null;
+        }
+        var claims = ParseJwtClaims(this.AccessToken);
+        var subject = claims["sub"];
+        var character = subject.Split(":")[2];
+        return int.Parse(character);
     }
 
     private async Task RefreshAccessToken() {
@@ -94,18 +105,20 @@ public class EveApiAuth {
 
     private async Task LoadLoginToken() {
 
-        var collectTokenTask = CollectLoginToken();
+        var state = Guid.NewGuid().ToString();
+        var collectTokenTask = CollectLoginToken(state);
 
-        var state = Guid.NewGuid().ToString(); // TODO: Not Crypto Secure
         var baseUrl = this.Config["RefreshTokenUrl"];
         var callbackUrl = this.Config["CallbackUrl"];
         var clientId = this.Config["ClientId"];
+        var scopes = this.Config["Scopes"];
 
         var queryString = HttpUtility.ParseQueryString(string.Empty);
         queryString["response_type"] = "code";
         queryString["redirect_uri"] = callbackUrl;
         queryString["state"] = state;
         queryString["client_id"] = clientId;
+        queryString["scope"] = scopes;
 
         var urlBuilder = new UriBuilder(baseUrl);
         urlBuilder.Query = queryString.ToString();
@@ -116,12 +129,13 @@ public class EveApiAuth {
 
     }
 
-    private async Task<string> CollectLoginToken() {
+    private async Task<string> CollectLoginToken(string stateNonce) {
         var callbackUrl = this.Config["CallbackUrl"];
         using var listener = new HttpListener();
         listener.Prefixes.Add(callbackUrl + "/");
         listener.Start();
         var context = await listener.GetContextAsync();
+        ; // TODO: Validate State Nonce
         var queryString = HttpUtility.ParseQueryString(context.Request.Url.Query);
         var token = queryString["code"];
         using var response = context.Response;
@@ -129,7 +143,6 @@ public class EveApiAuth {
         var buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
         response.ContentLength64 = buffer.Length;
         await response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
-        // TODO: Validate State
         return token;
     }
 
@@ -159,6 +172,21 @@ public class EveApiAuth {
         this.RefreshToken = responseContent.RefreshToken;
         this.RefreshAt = DateTime.Now.AddSeconds(responseContent.ExpiresIn);
 
+    }
+
+    private Dictionary<string, dynamic> ParseJwtClaims(string jwt) {
+        var parts = jwt.Split('.');
+        var payload = parts[1];
+        // Fix Base64 padding
+        payload = payload.Replace('-', '+').Replace('_', '/');
+        switch (payload.Length % 4) {
+            case 2: payload += "=="; break;
+            case 3: payload += "="; break;
+        }
+        byte[] bytes = Convert.FromBase64String(payload);
+        var str = Encoding.UTF8.GetString(bytes);
+        var claims = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(str);
+        return claims;
     }
 
 }

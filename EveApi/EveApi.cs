@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 namespace EveTrading.EveApi;
 
 public class EveApi {
-    
+
     private readonly SDE.SDE SDE;
     private readonly HttpClient HttpClient;
     private readonly EveApiAuth Auth;
@@ -29,4 +29,15 @@ public class EveApi {
         };
     }
 
+    public async Task<List<Asset>> GetAssets() {
+        await this.Auth.RefreshLoginIfRequired();
+        var character = this.Auth.GetCharacter();
+        var request = this.Auth.AuthenticatedRequest($"/characters/{character}/assets/");
+        var response = await this.HttpClient.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        var responseString = await response.Content.ReadAsStringAsync();
+        var result = JsonConvert.DeserializeObject<List<Asset>>(responseString);
+        return result;
+    }
+    
 }

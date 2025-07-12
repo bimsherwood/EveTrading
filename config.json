@@ -5,7 +5,29 @@
     "RefreshTokenUrl":"https://login.eveonline.com/v2/oauth/authorize",
     "AccessTokenUrl":"https://login.eveonline.com/v2/oauth/token",
     "CallbackUrl":"http://localhost:8088",
+    "Scopes":"esi-assets.read_assets.v1",
     "SDERootPath":"C:/Users/bimmo/Downloads/sde",
     "GraphOutputFolder":"C:/Users/bimmo/Downloads/evePlots",
-    "CacheFile":"C:/Users/bimmo/Downloads/eveCache.json"
+    "CacheFile":"C:/Users/bimmo/Downloads/eveCache.json",
+    "Commodities":[
+        "PLEX",
+        "Compressed Zeolites",
+        "Compressed Bitumens",
+        "Compressed Sylvite",
+        "Compressed Coesite",
+        "Compressed Plagioclase",
+        "Compressed Pyroxeres",
+        "Compressed Veldspar",
+        "Compressed Scordite",
+        "Toxic Metals",
+        "Reactive Metals",
+        "Precious Metals",
+        "Chiral Structures",
+        "Silicon",
+        "Mechanical Parts",
+        "Consumer Electronics",
+        "Construction Blocks",
+        "Robotics",
+        "Smartfab Units"
+    ]
 }
