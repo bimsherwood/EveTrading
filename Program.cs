@@ -38,7 +38,9 @@ public class Program {
 
     private async Task Run(string[] args) {
         var instruction = args.FirstOrDefault()?.ToLower();
-        var commodities = this.Config.GetSection("Commodities").Get<string[]>();;
+        var commodities = args.Length > 1
+            ? args.Skip(1).ToArray()
+            : this.Config.GetSection("Commodities").Get<string[]>();
         switch (instruction) {
             case "swingtest":
                 await SwingTest(commodities);
@@ -57,9 +59,9 @@ public class Program {
 
     private async Task ShowHelp() {
         Console.WriteLine("Usage:");
-        Console.WriteLine("EveTrading.exe assets");
-        Console.WriteLine("EveTrading.exe swingtest");
-        Console.WriteLine("EveTrading.exe plot");
+        Console.WriteLine("EveTrading.exe assets [<commodity>]");
+        Console.WriteLine("EveTrading.exe swingtest [<commodity>]");
+        Console.WriteLine("EveTrading.exe plot [<commodity>]");
     }
 
     private async Task SwingTest(string[] commodities) {
